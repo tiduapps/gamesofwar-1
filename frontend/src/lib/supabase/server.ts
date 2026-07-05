@@ -1,10 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import type { Cookies } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
+import { publicEnv } from '$lib/env/public';
 
 export function createSupabaseServerClient(cookies: Cookies) {
-	const url = env.PUBLIC_SUPABASE_URL ?? '';
-	const key = env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+	const url = publicEnv('PUBLIC_SUPABASE_URL');
+	const key = publicEnv('PUBLIC_SUPABASE_ANON_KEY');
 
 	return createServerClient(url, key, {
 		cookies: {
@@ -19,8 +19,8 @@ export function createSupabaseServerClient(cookies: Cookies) {
 }
 
 export function isSupabaseConfigured(): boolean {
-	const url = env.PUBLIC_SUPABASE_URL ?? '';
-	const key = env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+	const url = publicEnv('PUBLIC_SUPABASE_URL');
+	const key = publicEnv('PUBLIC_SUPABASE_ANON_KEY');
 
 	return Boolean(
 		url &&

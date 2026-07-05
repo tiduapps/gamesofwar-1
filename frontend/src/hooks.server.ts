@@ -1,10 +1,10 @@
 import { createSupabaseServerClient } from '$lib/supabase/server';
+import { publicEnv } from '$lib/env/public';
 import type { Handle } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const url = env.PUBLIC_SUPABASE_URL ?? '';
-	const key = env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+	const url = publicEnv('PUBLIC_SUPABASE_URL', event.platform?.env);
+	const key = publicEnv('PUBLIC_SUPABASE_ANON_KEY', event.platform?.env);
 
 	if (url && key && !url.includes('your-project') && !key.includes('your-anon-key')) {
 		event.locals.supabase = createSupabaseServerClient(event.cookies);
