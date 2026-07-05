@@ -1,0 +1,18 @@
+{
+	"name": "gamesofwar",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"images:extract": "node --env-file=scripts/.env scripts/extract-images.mjs",
+		"images:migrate": "node --env-file=scripts/.env scripts/migrate-images-to-supabase.mjs",
+		"images:migrate:dry-run": "node scripts/migrate-images-to-supabase.mjs --dry-run",
+		"images:migrate:download": "node scripts/migrate-images-to-supabase.mjs --download-only",
+		"images:reoptimize": "node --env-file=scripts/.env scripts/reoptimize-images.mjs",
+		"images:patch": "node scripts/patch-games-data.mjs",
+		"import:games": "node --env-file=scripts/.env scripts/import-games.mjs"
+	},
+	"dependencies": {
+		"@supabase/supabase-js": "^2.49.8",
+		"sharp": "^0.34.2"
+	}
+}

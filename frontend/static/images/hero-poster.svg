@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="420" viewBox="0 0 560 420">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#558b6e"/>
+      <stop offset="100%" stop-color="#3e6b4d"/>
+    </linearGradient>
+  </defs>
+  <rect width="560" height="420" fill="url(#bg2)"/>
+  <rect x="72" y="56" width="416" height="308" rx="16" fill="#e8f0e8" opacity="0.96"/>
+  <text x="280" y="200" text-anchor="middle" fill="#2f5239" font-family="Georgia, serif" font-size="28" font-weight="bold">War Game</text>
+  <text x="280" y="240" text-anchor="middle" fill="#4a6b55" font-family="system-ui, sans-serif" font-size="14">Vintage Collection</text>
+</svg>

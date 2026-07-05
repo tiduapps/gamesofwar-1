@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+scripts/.env
+.DS_Store
+dist/
+.svelte-kit/
+.wrangler/
+
+# Image migration artifacts
+backend/image-manifest.json
+backend/image-migration.log.jsonl
+backend/image-downloads/
+backend/games_data_migrated.json
