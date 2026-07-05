@@ -1,33 +1,30 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { adminLoginUrl, requireAdmin } from '$lib/admin/auth';
 import { fetchPendingGameComments } from '$lib/games/detail';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ cookies }) => {
-	if (!isSupabaseConfigured()) {
+export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.supabase) {
 		return { comments: [], supabaseReady: false };
 	}
 
-	if (!(await requireAdmin(cookies))) {
+	if (!(await requireAdmin(locals.supabase))) {
 		throw redirect(303, adminLoginUrl('/admin/comments'));
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
-	const comments = await fetchPendingGameComments(supabase);
+	const comments = await fetchPendingGameComments(locals.supabase);
 
 	return { comments, supabaseReady: true };
 };
 
 export const actions: Actions = {
-	approve: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) {
+	approve: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) {
 			return fail(403, { error: 'Not authorized' });
 		}
 
-		const supabase = createSupabaseServerClient(cookies);
 		const id = String((await request.formData()).get('id') ?? '');
-		const { error } = await supabase.rpc('approve_game_comment', { comment_id: id });
+		const { error } = await locals.supabase.rpc('approve_game_comment', { comment_id: id });
 
 		if (error) {
 			return fail(500, { error: error.message });
@@ -36,17 +33,16 @@ export const actions: Actions = {
 		throw redirect(303, '/admin/comments');
 	},
 
-	reject: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) {
+	reject: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) {
 			return fail(403, { error: 'Not authorized' });
 		}
 
-		const supabase = createSupabaseServerClient(cookies);
 		const formData = await request.formData();
 		const id = String(formData.get('id') ?? '');
 		const note = String(formData.get('note') ?? '').trim() || null;
 
-		const { error } = await supabase.rpc('reject_game_comment', {
+		const { error } = await locals.supabase.rpc('reject_game_comment', {
 			comment_id: id,
 			note
 		});

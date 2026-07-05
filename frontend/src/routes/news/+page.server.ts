@@ -1,5 +1,4 @@
 import { fallbackNewsAnnouncements } from '$lib/data/news-fallbacks';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { Announcement } from '$lib/types/database';
 import type { PageServerLoad } from './$types';
 
@@ -42,12 +41,12 @@ function mapNewsAnnouncement(row: {
 	};
 }
 
-export const load: PageServerLoad = async ({ cookies }) => {
-	if (!isSupabaseConfigured()) {
+export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.supabase) {
 		return { announcements: fallbackNewsAnnouncements, usingFallbackData: true };
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
+	const supabase = locals.supabase;
 	const { data, error } = await supabase
 		.from('announcements')
 		.select(newsSelect)

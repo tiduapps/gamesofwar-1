@@ -1,10 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import { adminLoginUrl, getAdminAuth } from '$lib/admin/auth';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ cookies }) => {
-	if (!isSupabaseConfigured()) {
+export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.supabase) {
 		return {
 			supabaseReady: false,
 			pendingComments: 0,
@@ -15,12 +14,11 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		};
 	}
 
-	const { isAdmin } = await getAdminAuth(cookies);
+	const supabase = locals.supabase;
+	const { isAdmin } = await getAdminAuth(supabase);
 	if (!isAdmin) {
 		throw redirect(303, adminLoginUrl('/admin'));
 	}
-
-	const supabase = createSupabaseServerClient(cookies);
 
 	const [commentsRes, submissionsRes, announcementsRes, storiesRes, gamesRes] = await Promise.all([
 		supabase.from('game_comments').select('id', { count: 'exact', head: true }).eq('status', 'pending'),

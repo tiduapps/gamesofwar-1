@@ -1,5 +1,4 @@
 import { buildStoryList } from '$lib/stories/admin';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { StoryWithGames } from '$lib/types/database';
 import type { PageServerLoad } from './$types';
 
@@ -11,12 +10,12 @@ const storySelect = `
   )
 `;
 
-export const load: PageServerLoad = async ({ cookies }) => {
-	if (!isSupabaseConfigured()) {
+export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.supabase) {
 		return { stories: [] as StoryWithGames[] };
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
+	const supabase = locals.supabase;
 	const { data, error } = await supabase
 		.from('stories')
 		.select(storySelect)

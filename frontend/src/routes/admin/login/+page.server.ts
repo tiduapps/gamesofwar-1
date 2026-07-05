@@ -1,13 +1,12 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getAdminAuth } from '$lib/admin/auth';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ cookies, url }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	const redirectTo = url.searchParams.get('redirect') ?? '/admin';
 
-	if (isSupabaseConfigured()) {
-		const { isAdmin } = await getAdminAuth(cookies);
+	if (locals.supabase) {
+		const { isAdmin } = await getAdminAuth(locals.supabase);
 		if (isAdmin) {
 			throw redirect(303, redirectTo);
 		}
@@ -17,7 +16,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, cookies }) => {
+	default: async ({ request, locals }) => {
 		const formData = await request.formData();
 		const email = String(formData.get('email') ?? '').trim();
 		const password = String(formData.get('password') ?? '');
@@ -27,18 +26,18 @@ export const actions: Actions = {
 			return fail(400, { error: 'Email and password are required.', email });
 		}
 
-		if (!isSupabaseConfigured()) {
+		if (!locals.supabase) {
 			return fail(503, { error: 'Supabase is not configured.', email });
 		}
 
-		const supabase = createSupabaseServerClient(cookies);
+		const supabase = locals.supabase;
 		const { error } = await supabase.auth.signInWithPassword({ email, password });
 
 		if (error) {
 			return fail(401, { error: 'Incorrect email or password.', email });
 		}
 
-		const { isAdmin } = await getAdminAuth(cookies);
+		const { isAdmin } = await getAdminAuth(supabase);
 		if (!isAdmin) {
 			await supabase.auth.signOut();
 			return fail(403, {

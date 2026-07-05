@@ -1,6 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
 import { fetchApprovedGameComments, fetchGameBySlug } from '$lib/games/detail';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { Actions, PageServerLoad } from './$types';
 
 type CommentFields = {
@@ -39,12 +38,12 @@ function validateComment(fields: CommentFields): Record<string, string> {
 	return errors;
 }
 
-export const load: PageServerLoad = async ({ params, cookies }) => {
-	if (!isSupabaseConfigured()) {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	if (!locals.supabase) {
 		throw error(404, 'Game not found');
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
+	const supabase = locals.supabase;
 	const game = await fetchGameBySlug(supabase, params.slug);
 
 	if (!game) {
@@ -61,7 +60,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 };
 
 export const actions: Actions = {
-	comment: async ({ request, params, cookies }) => {
+	comment: async ({ request, params, locals }) => {
 		const fields = readCommentFields(await request.formData());
 		const errors = validateComment(fields);
 
@@ -69,7 +68,7 @@ export const actions: Actions = {
 			return fail(400, { errors, fields, success: false });
 		}
 
-		if (!isSupabaseConfigured()) {
+		if (!locals.supabase) {
 			return fail(503, {
 				errors: { form: 'Comments are unavailable right now.' },
 				fields,
@@ -77,7 +76,7 @@ export const actions: Actions = {
 			});
 		}
 
-		const supabase = createSupabaseServerClient(cookies);
+		const supabase = locals.supabase;
 		const game = await fetchGameBySlug(supabase, params.slug);
 
 		if (!game) {

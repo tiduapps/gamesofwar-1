@@ -2,12 +2,11 @@ import {
 	fallbackAnnouncements,
 	fallbackFeaturedCollections
 } from '$lib/data/homepage-fallbacks';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { Announcement, FeaturedCollection } from '$lib/types/database';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ cookies }) => {
-	if (!isSupabaseConfigured()) {
+export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.supabase) {
 		return {
 			featuredCollections: fallbackFeaturedCollections,
 			announcements: fallbackAnnouncements,
@@ -15,7 +14,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		};
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
+	const supabase = locals.supabase;
 
 	const [collectionsResult, announcementsResult] = await Promise.all([
 		supabase

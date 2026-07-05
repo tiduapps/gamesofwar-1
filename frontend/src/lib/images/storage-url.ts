@@ -1,12 +1,9 @@
-import { publicEnv } from '$lib/env/public';
-
-export function storageBucketName(): string {
-	return publicEnv('PUBLIC_STORAGE_BUCKET') || 'games';
+export function storageBucketName(bucket?: string): string {
+	return bucket || 'games';
 }
 
-export function storagePublicUrl(storagePath: string): string {
-	const base = publicEnv('PUBLIC_SUPABASE_URL').replace(/\/$/, '');
-	const bucket = storageBucketName();
+export function storagePublicUrl(storagePath: string, supabaseUrl: string, bucket = 'games'): string {
+	const base = supabaseUrl.replace(/\/$/, '');
 	return `${base}/storage/v1/object/public/${bucket}/${storagePath}`;
 }
 

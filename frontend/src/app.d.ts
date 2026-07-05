@@ -11,6 +11,7 @@ declare global {
 
 		interface Locals {
 			supabase?: import('@supabase/supabase-js').SupabaseClient;
+			supabaseReady: boolean;
 			user: import('@supabase/supabase-js').User | null;
 		}
 

@@ -1,6 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { adminLoginUrl, requireAdmin } from '$lib/admin/auth';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { Announcement } from '$lib/types/database';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -26,16 +25,16 @@ function mapAnnouncement(row: {
 	};
 }
 
-export const load: PageServerLoad = async ({ cookies }) => {
-	if (!isSupabaseConfigured()) {
+export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.supabase) {
 		return { announcements: [] as Announcement[], games: [] as GameOption[], supabaseReady: false };
 	}
 
-	if (!(await requireAdmin(cookies))) {
+	if (!(await requireAdmin(locals.supabase))) {
 		throw redirect(303, adminLoginUrl('/admin/announcements'));
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
+	const supabase = locals.supabase;
 
 	const [announcementsRes, gamesRes] = await Promise.all([
 		supabase
@@ -83,8 +82,8 @@ function parseAnnouncementFields(formData: FormData) {
 }
 
 export const actions: Actions = {
-	create: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) {
+	create: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) {
 			return fail(403, { error: 'Not authorized' });
 		}
 
@@ -93,8 +92,7 @@ export const actions: Actions = {
 			return fail(400, { error: fields.error });
 		}
 
-		const supabase = createSupabaseServerClient(cookies);
-		const { error } = await supabase.from('announcements').insert({ ...fields, placement: 'homepage' });
+		const { error } = await locals.supabase.from('announcements').insert({ ...fields, placement: 'homepage' });
 
 		if (error) {
 			return fail(500, { error: error.message });
@@ -103,8 +101,8 @@ export const actions: Actions = {
 		throw redirect(303, '/admin/announcements');
 	},
 
-	update: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) {
+	update: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) {
 			return fail(403, { error: 'Not authorized' });
 		}
 
@@ -119,8 +117,7 @@ export const actions: Actions = {
 			return fail(400, { error: fields.error });
 		}
 
-		const supabase = createSupabaseServerClient(cookies);
-		const { error } = await supabase.from('announcements').update(fields).eq('id', id);
+		const { error } = await locals.supabase.from('announcements').update(fields).eq('id', id);
 
 		if (error) {
 			return fail(500, { error: error.message });
@@ -129,8 +126,8 @@ export const actions: Actions = {
 		throw redirect(303, '/admin/announcements');
 	},
 
-	delete: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) {
+	delete: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) {
 			return fail(403, { error: 'Not authorized' });
 		}
 
@@ -139,8 +136,7 @@ export const actions: Actions = {
 			return fail(400, { error: 'Missing announcement id.' });
 		}
 
-		const supabase = createSupabaseServerClient(cookies);
-		const { error } = await supabase.from('announcements').delete().eq('id', id);
+		const { error } = await locals.supabase.from('announcements').delete().eq('id', id);
 
 		if (error) {
 			return fail(500, { error: error.message });

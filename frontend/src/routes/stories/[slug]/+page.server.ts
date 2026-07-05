@@ -1,5 +1,4 @@
 import { error } from '@sveltejs/kit';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { PageServerLoad } from './$types';
 
 type LinkedGame = {
@@ -15,12 +14,12 @@ type LinkedGame = {
 
 type StoryNav = { title: string; slug: string };
 
-export const load: PageServerLoad = async ({ params, cookies }) => {
-	if (!isSupabaseConfigured()) {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	if (!locals.supabase) {
 		throw error(404, 'Story not found');
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
+	const supabase = locals.supabase;
 
 	const { data: story, error: storyError } = await supabase
 		.from('stories')

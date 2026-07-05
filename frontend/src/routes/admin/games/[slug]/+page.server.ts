@@ -7,7 +7,6 @@ import {
 	swapPhotoOrder,
 	uploadGameImage
 } from '$lib/admin/games';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { Actions, PageServerLoad } from './$types';
 
 function parseOptionalInt(value: FormDataEntryValue | null): number | null {
@@ -17,17 +16,16 @@ function parseOptionalInt(value: FormDataEntryValue | null): number | null {
 	return Number.isFinite(n) ? n : null;
 }
 
-export const load: PageServerLoad = async ({ params, cookies }) => {
-	if (!isSupabaseConfigured()) {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	if (!locals.supabase) {
 		throw redirect(303, '/admin/games');
 	}
 
-	if (!(await requireAdmin(cookies))) {
+	if (!(await requireAdmin(locals.supabase))) {
 		throw redirect(303, adminLoginUrl(`/admin/games/${params.slug}`));
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
-	const game = await fetchAdminGameBySlug(supabase, params.slug);
+	const game = await fetchAdminGameBySlug(locals.supabase, params.slug);
 
 	if (!game) {
 		throw redirect(303, '/admin/games');
@@ -37,14 +35,14 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 };
 
 export const actions: Actions = {
-	updateGame: async ({ request, params, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	updateGame: async ({ request, params, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const formData = await request.formData();
 		const title = String(formData.get('title') ?? '').trim();
 		if (!title) return fail(400, { error: 'Title is required.' });
 
-		const supabase = createSupabaseServerClient(cookies);
+		const supabase = locals.supabase;
 		const game = await fetchAdminGameBySlug(supabase, params.slug);
 		if (!game) return fail(404, { error: 'Game not found.' });
 
@@ -66,8 +64,8 @@ export const actions: Actions = {
 		throw redirect(303, `/admin/games/${params.slug}`);
 	},
 
-	uploadImage: async ({ request, params, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	uploadImage: async ({ request, params, locals, platform }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const formData = await request.formData();
 		const file = formData.get('image');
@@ -77,11 +75,15 @@ export const actions: Actions = {
 			return fail(400, { error: 'Choose an image to upload.' });
 		}
 
-		const supabase = createSupabaseServerClient(cookies);
+		const supabase = locals.supabase;
 		const game = await fetchAdminGameBySlug(supabase, params.slug);
 		if (!game) return fail(404, { error: 'Game not found.' });
 
-		const uploaded = await uploadGameImage(supabase, game.id, file);
+		const cfEnv = platform?.env as Record<string, string | undefined> | undefined;
+		const supabaseUrl = cfEnv?.PUBLIC_SUPABASE_URL ?? '';
+		const bucket = cfEnv?.PUBLIC_STORAGE_BUCKET ?? 'games';
+
+		const uploaded = await uploadGameImage(supabase, game.id, file, supabaseUrl, bucket);
 		if ('error' in uploaded) return fail(500, { error: uploaded.error });
 
 		const photoUrls = appendPhotoUrl(game.photo_urls, uploaded.url);
@@ -100,17 +102,16 @@ export const actions: Actions = {
 		throw redirect(303, `/admin/games/${params.slug}`);
 	},
 
-	setCover: async ({ request, params, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	setCover: async ({ request, params, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const photoUrl = String((await request.formData()).get('photo_url') ?? '').trim();
 		if (!photoUrl) return fail(400, { error: 'Missing photo URL.' });
 
-		const supabase = createSupabaseServerClient(cookies);
-		const game = await fetchAdminGameBySlug(supabase, params.slug);
+		const game = await fetchAdminGameBySlug(locals.supabase, params.slug);
 		if (!game) return fail(404, { error: 'Game not found.' });
 
-		const { error } = await supabase
+		const { error } = await locals.supabase
 			.from('games')
 			.update({ cover_photo_url: photoUrl })
 			.eq('id', game.id);
@@ -119,14 +120,13 @@ export const actions: Actions = {
 		throw redirect(303, `/admin/games/${params.slug}`);
 	},
 
-	removePhoto: async ({ request, params, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	removePhoto: async ({ request, params, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const photoUrl = String((await request.formData()).get('photo_url') ?? '').trim();
 		if (!photoUrl) return fail(400, { error: 'Missing photo URL.' });
 
-		const supabase = createSupabaseServerClient(cookies);
-		const game = await fetchAdminGameBySlug(supabase, params.slug);
+		const game = await fetchAdminGameBySlug(locals.supabase, params.slug);
 		if (!game) return fail(404, { error: 'Game not found.' });
 
 		const photoUrls = removePhotoUrl(game.photo_urls, photoUrl);
@@ -135,7 +135,7 @@ export const actions: Actions = {
 			coverPhotoUrl = photoUrls[0] ?? null;
 		}
 
-		const { error } = await supabase
+		const { error } = await locals.supabase
 			.from('games')
 			.update({ photo_urls: photoUrls, cover_photo_url: coverPhotoUrl })
 			.eq('id', game.id);
@@ -144,8 +144,8 @@ export const actions: Actions = {
 		throw redirect(303, `/admin/games/${params.slug}`);
 	},
 
-	movePhoto: async ({ request, params, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	movePhoto: async ({ request, params, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const formData = await request.formData();
 		const photoUrl = String(formData.get('photo_url') ?? '').trim();
@@ -153,12 +153,11 @@ export const actions: Actions = {
 
 		if (!photoUrl) return fail(400, { error: 'Missing photo URL.' });
 
-		const supabase = createSupabaseServerClient(cookies);
-		const game = await fetchAdminGameBySlug(supabase, params.slug);
+		const game = await fetchAdminGameBySlug(locals.supabase, params.slug);
 		if (!game) return fail(404, { error: 'Game not found.' });
 
 		const photoUrls = swapPhotoOrder(game.photo_urls, photoUrl, direction);
-		const { error } = await supabase.from('games').update({ photo_urls: photoUrls }).eq('id', game.id);
+		const { error } = await locals.supabase.from('games').update({ photo_urls: photoUrls }).eq('id', game.id);
 
 		if (error) return fail(500, { error: error.message });
 		throw redirect(303, `/admin/games/${params.slug}`);

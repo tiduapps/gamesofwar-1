@@ -7,7 +7,6 @@ import {
 	swapStoryGameOrder,
 	swapStoryOrder
 } from '$lib/stories/admin';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { StoryWithGames } from '$lib/types/database';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -19,16 +18,16 @@ const storySelect = `
   )
 `;
 
-export const load: PageServerLoad = async ({ cookies }) => {
-	if (!isSupabaseConfigured()) {
+export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.supabase) {
 		return { stories: [] as StoryWithGames[], games: [], supabaseReady: false, storyCount: 0 };
 	}
 
-	if (!(await requireAdmin(cookies))) {
+	if (!(await requireAdmin(locals.supabase))) {
 		throw redirect(303, adminLoginUrl('/admin/stories'));
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
+	const supabase = locals.supabase;
 
 	const [storiesRes, gamesRes, countRes] = await Promise.all([
 		supabase.from('stories').select(storySelect).order('sort_order'),
@@ -49,13 +48,13 @@ export const load: PageServerLoad = async ({ cookies }) => {
 };
 
 export const actions: Actions = {
-	createStory: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	createStory: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const title = String((await request.formData()).get('title') ?? '').trim();
 		if (!title) return fail(400, { error: 'Story title is required.' });
 
-		const supabase = createSupabaseServerClient(cookies);
+		const supabase = locals.supabase;
 		const { data: slug, error: slugError } = await supabase.rpc('unique_story_slug', {
 			base_title: title
 		});
@@ -71,8 +70,8 @@ export const actions: Actions = {
 		throw redirect(303, '/admin/stories');
 	},
 
-	updateStory: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	updateStory: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const formData = await request.formData();
 		const id = String(formData.get('id') ?? '').trim();
@@ -81,28 +80,26 @@ export const actions: Actions = {
 
 		if (!id || !title) return fail(400, { error: 'Story id and title are required.' });
 
-		const supabase = createSupabaseServerClient(cookies);
-		const { error } = await supabase.from('stories').update({ title, is_active: isActive }).eq('id', id);
+		const { error } = await locals.supabase.from('stories').update({ title, is_active: isActive }).eq('id', id);
 
 		if (error) return fail(500, { error: error.message });
 		throw redirect(303, '/admin/stories');
 	},
 
-	deleteStory: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	deleteStory: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const id = String((await request.formData()).get('id') ?? '').trim();
 		if (!id) return fail(400, { error: 'Missing story id.' });
 
-		const supabase = createSupabaseServerClient(cookies);
-		const { error } = await supabase.from('stories').delete().eq('id', id);
+		const { error } = await locals.supabase.from('stories').delete().eq('id', id);
 
 		if (error) return fail(500, { error: error.message });
 		throw redirect(303, '/admin/stories');
 	},
 
-	moveStory: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	moveStory: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const formData = await request.formData();
 		const id = String(formData.get('id') ?? '').trim();
@@ -110,15 +107,14 @@ export const actions: Actions = {
 
 		if (!id) return fail(400, { error: 'Missing story id.' });
 
-		const supabase = createSupabaseServerClient(cookies);
-		const result = await swapStoryOrder(supabase, id, direction);
+		const result = await swapStoryOrder(locals.supabase, id, direction);
 		if (result.error) return fail(500, { error: result.error });
 
 		throw redirect(303, '/admin/stories');
 	},
 
-	addGame: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	addGame: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const formData = await request.formData();
 		const storyId = String(formData.get('story_id') ?? '').trim();
@@ -126,9 +122,8 @@ export const actions: Actions = {
 
 		if (!storyId || !gameId) return fail(400, { error: 'Story and game are required.' });
 
-		const supabase = createSupabaseServerClient(cookies);
-		const sortOrder = await nextStoryGameSortOrder(supabase, storyId);
-		const { error } = await supabase.from('story_games').insert({
+		const sortOrder = await nextStoryGameSortOrder(locals.supabase, storyId);
+		const { error } = await locals.supabase.from('story_games').insert({
 			story_id: storyId,
 			game_id: gameId,
 			sort_order: sortOrder
@@ -144,21 +139,20 @@ export const actions: Actions = {
 		throw redirect(303, '/admin/stories');
 	},
 
-	removeGame: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	removeGame: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const linkId = String((await request.formData()).get('link_id') ?? '').trim();
 		if (!linkId) return fail(400, { error: 'Missing game link id.' });
 
-		const supabase = createSupabaseServerClient(cookies);
-		const { error } = await supabase.from('story_games').delete().eq('id', linkId);
+		const { error } = await locals.supabase.from('story_games').delete().eq('id', linkId);
 
 		if (error) return fail(500, { error: error.message });
 		throw redirect(303, '/admin/stories');
 	},
 
-	moveGame: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) return fail(403, { error: 'Not authorized' });
+	moveGame: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) return fail(403, { error: 'Not authorized' });
 
 		const formData = await request.formData();
 		const linkId = String(formData.get('link_id') ?? '').trim();
@@ -166,8 +160,7 @@ export const actions: Actions = {
 
 		if (!linkId) return fail(400, { error: 'Missing game link id.' });
 
-		const supabase = createSupabaseServerClient(cookies);
-		const result = await swapStoryGameOrder(supabase, linkId, direction);
+		const result = await swapStoryGameOrder(locals.supabase, linkId, direction);
 		if (result.error) return fail(500, { error: result.error });
 
 		throw redirect(303, '/admin/stories');

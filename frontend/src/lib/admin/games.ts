@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { adminGameImagePath, storageBucketName, storagePublicUrl } from '$lib/images/storage-url';
+import { adminGameImagePath, storagePublicUrl } from '$lib/images/storage-url';
 import type { Game } from '$lib/types/database';
 
 const ALLOWED_IMAGE_TYPES = new Set(['image/webp', 'image/png', 'image/jpeg']);
@@ -33,7 +33,9 @@ export async function fetchAdminGameBySlug(
 export async function uploadGameImage(
 	supabase: SupabaseClient,
 	gameId: string,
-	file: File
+	file: File,
+	supabaseUrl: string,
+	bucket = 'games'
 ): Promise<{ url: string; path: string } | { error: string }> {
 	if (file.size === 0) {
 		return { error: 'No image file provided.' };
@@ -45,7 +47,6 @@ export async function uploadGameImage(
 
 	const extension = extensionForMime(file.type);
 	const path = adminGameImagePath(gameId, extension);
-	const bucket = storageBucketName();
 	const body = new Uint8Array(await file.arrayBuffer());
 
 	const { error } = await supabase.storage.from(bucket).upload(path, body, {
@@ -58,7 +59,7 @@ export async function uploadGameImage(
 		return { error: error.message };
 	}
 
-	return { url: storagePublicUrl(path), path };
+	return { url: storagePublicUrl(path, supabaseUrl, bucket), path };
 }
 
 export function swapPhotoOrder(urls: string[], photoUrl: string, direction: 'up' | 'down'): string[] {

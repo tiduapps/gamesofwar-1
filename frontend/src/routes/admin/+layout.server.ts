@@ -1,11 +1,10 @@
 import { getAdminAuth } from '$lib/admin/auth';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { LayoutServerLoad } from './$types';
 
-export const load: LayoutServerLoad = async ({ cookies, url }) => {
+export const load: LayoutServerLoad = async ({ locals, url }) => {
 	const isLoginPage = url.pathname === '/admin/login';
 
-	if (!isSupabaseConfigured()) {
+	if (!locals.supabase) {
 		return {
 			isAdmin: false,
 			userEmail: null,
@@ -16,13 +15,13 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
 		};
 	}
 
-	const { user, isAdmin } = await getAdminAuth(cookies);
+	const supabase = locals.supabase;
+	const { user, isAdmin } = await getAdminAuth(supabase);
 
 	let pendingComments = 0;
 	let pendingSubmissions = 0;
 
 	if (isAdmin && !isLoginPage) {
-		const supabase = createSupabaseServerClient(cookies);
 		const [commentsRes, submissionsRes] = await Promise.all([
 			supabase.from('game_comments').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
 			supabase

@@ -1,5 +1,4 @@
 import { fail } from '@sveltejs/kit';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { Actions } from './$types';
 
 type SubmissionFields = {
@@ -53,7 +52,7 @@ function validate(fields: SubmissionFields): Record<string, string> {
 }
 
 export const actions: Actions = {
-	default: async ({ request, cookies }) => {
+	default: async ({ request, locals }) => {
 		const fields = readFields(await request.formData());
 		const errors = validate(fields);
 
@@ -61,7 +60,7 @@ export const actions: Actions = {
 			return fail(400, { errors, fields, success: false });
 		}
 
-		if (!isSupabaseConfigured()) {
+		if (!locals.supabase) {
 			return fail(503, {
 				errors: { form: 'Submissions are unavailable until Supabase is configured.' },
 				fields,
@@ -69,10 +68,9 @@ export const actions: Actions = {
 			});
 		}
 
-		const supabase = createSupabaseServerClient(cookies);
 		const year = fields.year ? Number.parseInt(fields.year, 10) : null;
 
-		const { error } = await supabase.from('game_submissions').insert({
+		const { error } = await locals.supabase.from('game_submissions').insert({
 			title: fields.title,
 			year: Number.isFinite(year) ? year : null,
 			country: fields.country || null,

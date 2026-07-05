@@ -1,12 +1,11 @@
 import type { PageServerLoad } from './$types';
 import { GAMES_PAGE_SIZE, parseGameLibraryFilters } from '$lib/games/constants';
 import { fetchGameLibraryFacets, fetchGameLibraryPage } from '$lib/games/query';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 
-export const load: PageServerLoad = async ({ url, cookies }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
 	const filters = parseGameLibraryFilters(url.searchParams);
 
-	if (!isSupabaseConfigured()) {
+	if (!locals.supabase) {
 		return {
 			games: [],
 			filters,
@@ -18,7 +17,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 		};
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
+	const supabase = locals.supabase;
 
 	const [pageResult, facets] = await Promise.all([
 		fetchGameLibraryPage(supabase, filters),

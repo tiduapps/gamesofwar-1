@@ -1,19 +1,17 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { adminLoginUrl, requireAdmin } from '$lib/admin/auth';
-import { createSupabaseServerClient, isSupabaseConfigured } from '$lib/supabase/server';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ cookies }) => {
-	if (!isSupabaseConfigured()) {
+export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.supabase) {
 		return { submissions: [], supabaseReady: false };
 	}
 
-	if (!(await requireAdmin(cookies))) {
+	if (!(await requireAdmin(locals.supabase))) {
 		throw redirect(303, adminLoginUrl('/admin/submissions'));
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
-	const { data, error } = await supabase
+	const { data, error } = await locals.supabase
 		.from('game_submissions')
 		.select('*')
 		.eq('status', 'pending')
@@ -27,14 +25,13 @@ export const load: PageServerLoad = async ({ cookies }) => {
 };
 
 export const actions: Actions = {
-	approve: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) {
+	approve: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) {
 			return fail(403, { error: 'Not authorized' });
 		}
 
-		const supabase = createSupabaseServerClient(cookies);
 		const id = String((await request.formData()).get('id') ?? '');
-		const { data, error } = await supabase.rpc('approve_game_submission', {
+		const { data, error } = await locals.supabase.rpc('approve_game_submission', {
 			submission_id: id
 		});
 
@@ -45,17 +42,16 @@ export const actions: Actions = {
 		throw redirect(303, `/admin/submissions?approved=${data ?? ''}`);
 	},
 
-	reject: async ({ request, cookies }) => {
-		if (!(await requireAdmin(cookies))) {
+	reject: async ({ request, locals }) => {
+		if (!locals.supabase || !(await requireAdmin(locals.supabase))) {
 			return fail(403, { error: 'Not authorized' });
 		}
 
-		const supabase = createSupabaseServerClient(cookies);
 		const formData = await request.formData();
 		const id = String(formData.get('id') ?? '');
 		const note = String(formData.get('note') ?? '').trim() || null;
 
-		const { error } = await supabase.rpc('reject_game_submission', {
+		const { error } = await locals.supabase.rpc('reject_game_submission', {
 			submission_id: id,
 			note
 		});
