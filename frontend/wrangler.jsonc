@@ -5,5 +5,10 @@
 	"compatibility_flags": [
 		"nodejs_als"
 	],
-	"pages_build_output_dir": ".svelte-kit/cloudflare"
+	"pages_build_output_dir": ".svelte-kit/cloudflare",
+	"vars": {
+		"PUBLIC_SUPABASE_URL": "https://hnllhksxjgzgmgkadpgb.supabase.co",
+		"PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhubGxoa3N4amd6Z21na2FkcGdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NzAyNjUsImV4cCI6MjA5ODQ0NjI2NX0.vxvyuYyGVSg0OQiNo3KLYbnVfFPeqPmjhNGq0Vn0GE8",
+		"PUBLIC_STORAGE_BUCKET": "games"
+	}
 }
