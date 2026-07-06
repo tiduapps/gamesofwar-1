@@ -11,8 +11,13 @@
 </svelte:head>
 
 <header class="admin-page-header">
-	<h1>Games library</h1>
-	<p class="subtitle">Search and edit game details, covers, and photos.</p>
+	<div class="header-row">
+		<div>
+			<h1>Games library</h1>
+			<p class="subtitle">Search and edit game details, covers, and photos.</p>
+		</div>
+		<a href="/games/add" class="btn btn-sm">Add game</a>
+	</div>
 </header>
 
 {#if !data.supabaseReady}
@@ -78,6 +83,14 @@
 {/if}
 
 <style>
+	.header-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
 	.search-form {
 		display: flex;
 		flex-wrap: wrap;

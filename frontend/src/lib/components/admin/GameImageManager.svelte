@@ -176,8 +176,9 @@
 		align-items: center;
 		gap: 0.65rem;
 		margin-bottom: 1.25rem;
-		padding-bottom: 1.25rem;
+		padding-bottom: 1.5rem;
 		border-bottom: 1px solid var(--color-border);
+		overflow: visible;
 	}
 
 	.file-label {
@@ -186,6 +187,16 @@
 		gap: 0.35rem;
 		font-size: 0.8125rem;
 		font-weight: 700;
+		flex: 1 1 100%;
+	}
+
+	.file-label input[type='file'] {
+		display: block;
+		width: 100%;
+		max-width: 100%;
+		font: inherit;
+		padding: 0.4rem 0;
+		min-height: 2.5rem;
 	}
 
 	.checkbox {

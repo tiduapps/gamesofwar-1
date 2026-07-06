@@ -8,7 +8,8 @@
 
 <header class="admin-page-header">
 	<h1>Dashboard</h1>
-	<p class="subtitle">Manage games, stories, announcements, submissions, and comments.</p>
+	<p class="subtitle">Manage games, announcements, submissions, and comments.</p>
+	<a href="/admin/guide" class="guide-link">New here? Read the admin guide →</a>
 </header>
 
 {#if !data.supabaseReady}
@@ -19,12 +20,6 @@
 			<h2>Games library</h2>
 			<p class="count">{data.gameCount}</p>
 			<p class="hint">Edit game details, covers, and gallery photos.</p>
-		</a>
-
-		<a href="/admin/stories" class="dash-card card">
-			<h2>Stories</h2>
-			<p class="count">{data.storyCount}</p>
-			<p class="hint">Create stories and link games from the library.</p>
 		</a>
 
 		<a href="/admin/announcements" class="dash-card card">
@@ -86,6 +81,19 @@
 		margin: 0;
 		font-size: 0.875rem;
 		color: var(--color-text-muted);
+	}
+
+	.guide-link {
+		display: inline-block;
+		margin-top: 0.85rem;
+		font-size: 0.875rem;
+		font-weight: 700;
+		color: var(--color-primary);
+		text-decoration: none;
+	}
+
+	.guide-link:hover {
+		text-decoration: underline;
 	}
 
 	@media (max-width: 600px) {

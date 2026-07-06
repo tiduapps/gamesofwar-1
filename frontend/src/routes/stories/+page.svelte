@@ -1,14 +1,11 @@
 <script lang="ts">
 	import StoryListCard from '$lib/components/stories/StoryListCard.svelte';
-	import type { StoryWithGames } from '$lib/types/database';
 
-	let { data }: { data: { stories: StoryWithGames[] } } = $props();
+	let { data } = $props();
 
-	const totalGames = $derived(
-		data.stories.reduce(
-			(sum, story) => sum + story.games.filter((link) => link.game).length,
-			0
-		)
+	const storyCount = $derived(data.stories.length);
+	const chapterCount = $derived(
+		data.stories.reduce((sum, story) => sum + story.chapters.length, 0)
 	);
 </script>
 
@@ -27,35 +24,31 @@
 			<h1>Stories</h1>
 			<p class="hero-lead">
 				Follow the arc of wartime games from the 17th Century Franco-Spanish War to the fall of the
-				Berlin Wall — each story links games that illuminate a chapter of history.
+				Berlin Wall — each story illuminates a chapter of history through the games of its time.
 			</p>
-			{#if data.stories.length > 0}
-				<dl class="hero-stats">
+			<dl class="hero-stats">
+				<div>
+					<dt>Stories</dt>
+					<dd>{storyCount}</dd>
+				</div>
+				{#if chapterCount > 0}
 					<div>
-						<dt>Stories</dt>
-						<dd>{data.stories.length}</dd>
+						<dt>Chapters</dt>
+						<dd>{chapterCount}</dd>
 					</div>
-					<div>
-						<dt>Linked games</dt>
-						<dd>{totalGames}</dd>
-					</div>
-				</dl>
-			{/if}
+				{/if}
+			</dl>
 		</div>
 	</header>
 
 	<div class="container stories-content">
-		{#if data.stories.length === 0}
-			<p class="empty card">Stories are being organized. Check back soon.</p>
-		{:else}
-			<ol class="story-timeline">
-				{#each data.stories as story, index (story.id)}
-					<li>
-						<StoryListCard {story} {index} />
-					</li>
-				{/each}
-			</ol>
-		{/if}
+		<ol class="story-timeline">
+			{#each data.stories as story, index (story.slug)}
+				<li>
+					<StoryListCard {story} {index} />
+				</li>
+			{/each}
+		</ol>
 	</div>
 </section>
 
@@ -139,11 +132,5 @@
 
 	.story-timeline > li {
 		margin: 0;
-	}
-
-	.empty {
-		padding: 2rem;
-		text-align: center;
-		color: var(--color-text-muted);
 	}
 </style>

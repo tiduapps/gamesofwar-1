@@ -22,8 +22,8 @@
 
 	const navItems = $derived([
 		{ href: '/admin', label: 'Dashboard', exact: true },
+		{ href: '/admin/guide', label: 'Guide' },
 		{ href: '/admin/games', label: 'Games' },
-		{ href: '/admin/stories', label: 'Stories' },
 		{ href: '/admin/announcements', label: 'Announcements' },
 		{ href: '/admin/comments', label: 'Comments', badge: pendingComments },
 		{ href: '/admin/submissions', label: 'Submissions', badge: pendingSubmissions }

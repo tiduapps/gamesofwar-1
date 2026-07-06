@@ -11,3 +11,8 @@ export function adminGameImagePath(gameId: string, extension = 'webp'): string {
 	const ext = extension.replace(/^\./, '').toLowerCase();
 	return `covers/admin/${gameId}/${crypto.randomUUID()}.${ext}`;
 }
+
+export function submissionImagePath(submissionId: string, extension = 'webp'): string {
+	const ext = extension.replace(/^\./, '').toLowerCase();
+	return `submissions/${submissionId}/${crypto.randomUUID()}.${ext}`;
+}
